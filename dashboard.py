@@ -127,21 +127,78 @@ st.write("### Mujeres vs Hombres por País Destino")
 destino_region_graf = df_filtrado.groupby(["Pais de Estudios", "Sexo"]).size().unstack(fill_value=0)
 st.bar_chart(destino_region_graf)
 
-# Diversidad destinos por año
-st.write("### Diversidad de países destino por Año")
-st.line_chart(diversidad_destinos_ano.loc[años])
-
 # Movilidad por región (orden)
 st.write("### Región con mayor movilidad")
 st.bar_chart(movilidad_por_region.loc[regiones])
 
-# Duración promedio por género
-st.write("### Duración promedio del financiamiento por género")
-st.write(duracion_prom_genero)
-
 # Proyección 2026
 st.write("### 🔮 Proyección 2026 – promedio lineal por género")
 st.write(proyeccion_genero_2026)
+
+# ---------------------------------------------
+# NUEVOS GRÁFICOS SOLICITADOS
+# ---------------------------------------------
+
+
+st.write("### 🚻 Selección de Sexo por Modalidad")
+
+# Validación de columnas
+if all(col in df_filtrado.columns for col in ["Modalidad", "Sexo"]):
+    sexo_modalidad = df_filtrado.groupby(["Modalidad", "Sexo"]).size().unstack(fill_value=0)
+
+    st.bar_chart(sexo_modalidad)
+else:
+    st.warning("⚠️ El dataframe no contiene las columnas 'Modalidad' y 'Sexo'. Verifica los nombres.")
+
+# ---------------------------------------------
+# TABLA Y GRÁFICA: SEXO POR OCDE (INTERACTIVO)
+# ---------------------------------------------
+
+st.write("### 🎓 Distribución de Sexo por OCDE (Top N Interactivo)")
+
+# Validación de columnas
+if all(col in df_filtrado.columns for col in ["OCDE", "Sexo"]):
+
+    # Selector Top N
+    top_n = st.selectbox(
+        "Seleccionar Top N categorías OCDE",
+        [5, 10, 20, 30, "Todos"],
+        index=1
+    )
+
+    # Conteo total por OCDE para determinar los más frecuentes
+    conteo_ocde = df_filtrado["OCDE"].value_counts()
+
+    # Filtrar por Top N
+    if top_n == "Todos":
+        ocde_seleccionadas = conteo_ocde.index.tolist()
+    else:
+        ocde_seleccionadas = conteo_ocde.head(top_n).index.tolist()
+
+    df_ocde_top = df_filtrado[df_filtrado["OCDE"].isin(ocde_seleccionadas)]
+
+    # Tabla Sexo vs OCDE
+    tabla_sexo_ocde = (
+        df_ocde_top.groupby(["OCDE", "Sexo"])
+        .size()
+        .reset_index(name="Total")
+        .sort_values(["OCDE", "Sexo"])
+    )
+
+    st.write("#### 📋 Tabla Sexo por OCDE (ordenada por OCDE → Sexo)")
+    st.dataframe(tabla_sexo_ocde, use_container_width=True)
+
+    # Pivot para la gráfica
+    pivot_ocde = (
+        df_ocde_top.groupby(["OCDE", "Sexo"]).size().unstack(fill_value=0)
+    )
+
+    st.write("#### 📊 Gráfica Sexo vs OCDE (Top N)")
+    st.bar_chart(pivot_ocde)
+
+else:
+    st.warning("⚠️ El dataframe no contiene las columnas 'OCDE' y 'Sexo'. Verifica los nombres.")
+
 
 # Registros de detalle
 st.subheader("📄 Detalle de registros financiados filtrados")
